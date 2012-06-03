@@ -4,7 +4,9 @@
     "dependencies": {
         "express": "2.5.x",
         "jade": "0.26.x",
-        "markdown": "0.3.x"
+        "markdown": "0.3.x",
+        "http-get": "0.4.x",
+        "semver": "1.0.14"
     },
     "engines": {
         "node": "0.6.x"

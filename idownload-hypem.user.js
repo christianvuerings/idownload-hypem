@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name iDownload Hypem
-// @version 0.1
+// @version 0.2
 // @namespace http://denbuzze.com/
 // @description Download music from Hypem.com
 // @match http://*.hypem.com/*
@@ -10,13 +10,37 @@
 /*global document, soundManager*/
 var exec = function(fn) {
     var script = document.createElement('script');
-    script.setAttribute("type", "application/javascript");
+    script.setAttribute('id', 'idownload');
+    script.setAttribute('type', 'application/javascript');
     script.textContent = '(' + fn + ')();';
     document.body.appendChild(script);
     document.body.removeChild(script);
 };
 
 exec(function() {
+    var localhostExists = false;
+
+    var passRequest = function(event, callback) {
+        var target = event.currentTarget;
+        if (target.readyState === 4 && target.status === 200) {
+            if (callback) {
+                callback(true);
+            }
+        } else if (target.readyState === 4) {
+            if (callback) {
+                callback(false);
+            }
+        }
+    };
+
+    var makeRequest = function(url, callback) {
+        var httpRequest = new XMLHttpRequest();
+        httpRequest.onreadystatechange = function(event) {
+            passRequest(event, callback);
+        };
+        httpRequest.open('GET', url);
+        httpRequest.send();
+    };
 
     /**
      * Add CSS to the document
@@ -45,7 +69,8 @@ exec(function() {
         addGlobalCSS('' +
             ' #downloadButton { border-right: 1px solid #272727; color: #e0e0e0 !important; display: block; float: left; overflow: hidden; font-size: 16px; padding: 7px 7px 5px; }' +
             ' #downloadButton:hover { color: #277be1 !important; text-decoration: none; }' +
-            ' #downloadButton:active { color: #ff0000 !important; }'
+            ' #downloadButton:active { color: #ff0000 !important; }' +
+            ' #player-nowplaying { max-width: 545px }'
         );
     };
 
@@ -58,11 +83,20 @@ exec(function() {
             var downloadButton = document.createElement('a');
             downloadButton.setAttribute('id', 'downloadButton');
             downloadButton.setAttribute('href', '#');
+            downloadButton.setAttribute('target', '_newtab');
             var downloadText = document.createTextNode('▼');
             downloadButton.appendChild(downloadText);
             var playerFav = document.getElementById('playerFav');
             var parent = playerFav.parentNode;
-            parent.insertBefore(downloadButton, playerFav)
+            parent.insertBefore(downloadButton, playerFav);
+        }
+    };
+
+    var executeDownload = function(e) {
+        var downloadButton = document.getElementById('downloadButton');
+        if (localhostExists) {
+            e.preventDefault();
+            makeRequest(downloadButton.getAttribute('href'));
         }
     };
 
@@ -70,10 +104,30 @@ exec(function() {
      * Set the download link
      * @param {String} url The URL you want to use for the download link
      */
-    var setDownloadLink = function(url) {
+    var setDownloadLink = function(sound) {
+
+        var url = sound.url;
+        var filename = '';
+
+        if (localhostExists) {
+            if (trackList && trackList[activeList] && trackList[activeList][currentTrack]){
+                var currentPlayingTrack = trackList[activeList][currentTrack];
+                var addquery = '';
+                if (url.indexOf('?') > -1) {
+                    addquery = '&';
+                } else {
+                    addquery = '?';
+                }
+                filename = addquery + 'filename=' + encodeURIComponent(currentPlayingTrack.artist + ' - ' + currentPlayingTrack.song);
+            }
+            url = 'http://localhost:5000/download/' + encodeURIComponent(url+filename);
+        }
+
         var downloadButton = document.getElementById('downloadButton');
         if (downloadButton.getAttribute('href') !== url) {
             downloadButton.setAttribute('href', url);
+            downloadButton.removeEventListener('click', executeDownload);
+            downloadButton.addEventListener('click', executeDownload);
         }
     };
 
@@ -81,14 +135,28 @@ exec(function() {
         var currentSound = soundManager.soundIDs[0];
         if (currentSound) {
             addDownloadButton();
-            setDownloadLink(soundManager.sounds[currentSound].url);
+            setDownloadLink(soundManager.sounds[currentSound]);
         }
     };
 
-    var init = function() {
+    var initPolling = function() {
         soundManager.onready(function() {
             setInterval(checkPlaying, 500);
         });
     };
+
+    var checkLocalhostExists = function() {
+        makeRequest('http://localhost:5000/exists', function(data){
+            localhostExists = data;
+            initPolling();
+        });
+    };
+
+    var init = function() {
+        if (soundManager) {
+            checkLocalhostExists();
+        }
+    };
+
     init();
 });
