@@ -70,7 +70,7 @@ exec(function() {
             ' #downloadButton { border-right: 1px solid #272727; color: #e0e0e0 !important; display: block; float: left; overflow: hidden; font-size: 16px; padding: 7px 7px 5px; }' +
             ' #downloadButton:hover { color: #277be1 !important; text-decoration: none; }' +
             ' #downloadButton:active { color: #ff0000 !important; }' +
-            ' #player-nowplaying { max-width: 545px }'
+            ' #player-container #player-inner #player-controls #player-nowplaying { max-width: 490px }'
         );
     };
 
@@ -126,9 +126,9 @@ exec(function() {
         var downloadButton = document.getElementById('downloadButton');
         if (downloadButton.getAttribute('href') !== url) {
             downloadButton.setAttribute('href', url);
-            downloadButton.removeEventListener('click', executeDownload);
-            downloadButton.addEventListener('click', executeDownload);
         }
+        downloadButton.removeEventListener('click', executeDownload);
+        downloadButton.addEventListener('click', executeDownload);
     };
 
     var checkPlaying = function() {
@@ -146,7 +146,7 @@ exec(function() {
     };
 
     var checkLocalhostExists = function() {
-        makeRequest('http://localhost:5000/exists', function(data){
+        makeRequest('http://localhost:5000/exists', function(data) {
             localhostExists = data;
             initPolling();
         });
