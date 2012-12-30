@@ -42,7 +42,7 @@ app.get('/download/:fileid', function(req, res) {
         filename = splitting[splitting.length-1];
     }
 
-    http.get(options, 'downloads/' + filename, function (error, result) {
+    http.get(options, '/Users/christian/Music/iTunes/iTunes\ Media/Automatically\ Add\ to\ iTunes.localized/' + filename, function (error, result) {
         if (error) {
             console.error(error);
         } else {
